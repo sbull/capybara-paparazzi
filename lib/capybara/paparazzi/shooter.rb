@@ -53,8 +53,8 @@ class Capybara::Paparazzi::Shooter
       end
     end
 
-    def use(*args)
-      Capybara::Paparazzi.use(*args)
+    def follow(*args)
+      Capybara::Paparazzi.follow(*args)
     end
 
     def take_snapshots(driver, event_details=nil)

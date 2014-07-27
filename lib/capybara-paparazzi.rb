@@ -14,7 +14,7 @@ module Capybara::Paparazzi
       Capybara::Paparazzi::Shooter.config(&block)
     end
 
-    def use(*driver_names)
+    def follow(*driver_names)
       driver_names.each do |name|
         used_drivers[name] = true
       end

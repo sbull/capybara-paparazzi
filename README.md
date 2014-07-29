@@ -165,9 +165,13 @@ Here's a simple approach that could work for you:
 
 ## TODO
 
-The photo-capturing triggers may be incomplete, and enhancements may be
+- The photo-capturing triggers may be incomplete, and enhancements may be
 needed to be sure to capture everything. Currently, `visit` and `click`
 are the primary triggers.
+
+- Development has only been done with Poltergeist on an Ubuntu
+virtual machine, but the intent is to work with other drivers & setups.
+So feedback on that would be appreciated.
 
 ## Related Projects
 

@@ -2,9 +2,7 @@ module Capybara::Paparazzi::Element
 
   def click_with_paparazzi(*args)
     response = click_without_paparazzi(*args)
-    if session.driver.respond_to?(:take_snapshots)
-      session.driver.take_snapshots(:click, args)
-    end
+    Capybara::Paparazzi.take_snapshots_if_following(session.driver, :click, args)
     response
   end
 

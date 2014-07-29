@@ -17,6 +17,7 @@ mind.
 
 A few driving principles of Capybara::Paparazzi:
 
+- **Responsive**: It can take screenshots in whatever sizes you want.
 - **Unobtrusive**: You shouldn't need to edit your feature test scenarios
   to get screenshots.
 - **Easy**: Simple to set up, and out-of-the-box settings should get you far.
@@ -105,6 +106,21 @@ end
 
 For the default settings, see [shooter.rb](https://github.com/sbull/capybara-paparazzi/blob/master/lib/capybara/paparazzi/shooter.rb).
 
+### Manual screenshots
+
+Try as it might, Capybara::Paparazzi could miss some photos that you
+want it to take, particularly if you're using javascript to change
+the page without navigating to a different page. You can call
+
+    take_snapshots
+
+in your scenarios to manually capture the page.
+(`take_snapshots` is also known as `paparazzi_take_snapshots`,
+in case you use something else that defines `take_snapshots` differently.)
+
+You can leave these calls in your code even when you're not using
+`#follow`, and they will be no-ops.
+
 ### Screenshot Sizes
 
 Capybara::Paparazzi uses default screen sizes to represent common
@@ -121,8 +137,14 @@ a shorter view than the actual device height.
 Use an environment variable to turn screenshots on or off.
 You probably don't want them running all the time, and only
 need them on occasion:
-
-    Capybara::Paparazzi.follow(Capybara.default_driver, Capybara.javascript_driver) if ENV['CAPYBARA_PAPARAZZI_ENABLED']
+```ruby
+if ENV['CAPYBARA_PAPARAZZI_DIR'].present?
+  Capybara::Paparazzi.config do |config|
+    config.file_dir = ENV['CAPYBARA_PAPARAZZI_DIR']
+    config.follow(Capybara.default_driver, Capybara.javascript_driver)
+  end
+end
+```
 
 ### Driver Setup
 
@@ -141,10 +163,50 @@ Here's a simple approach that could work for you:
   1. `require 'capybara/poltergeist'`
   2. `Capybara.javascript_driver = :poltergeist`
 
+## TODO
+
+The photo-capturing triggers may be incomplete, and enhancements may be
+needed to be sure to capture everything. Currently, `visit` and `click`
+are the primary triggers.
+
+## Related Projects
+
+- [Capybara](https://github.com/jnicklas/capybara)
+- [Capybara::Animate](https://github.com/cpb/capybara-animate) - makes animated .gifs of scenarios.
+- [capybara-screenshot](https://github.com/mattheworiordan/capybara-screenshot) - takes screenshots of failing scenarios.
+- [Headless](https://github.com/leonid-shevtsov/headless) - has ways to capture screenshots and video.
+
 ## Contributing
+
+### Generic Github Instructions
 
 1. Fork it
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
+
+### Working on a Gem
+
+You can read up on how to develop a local gem on
+[rubygems.org](http://guides.rubygems.org/make-your-own-gem/).
+
+Here's the TL;DR:
+
+1. Make your edits.
+2. Update the version (lib/capybara/paparazzi/version.rb), say to `0.0.1.new`.
+3. `gem build capybara-paparazzi.gemspec`
+4. `gem install ./capybara-paparazzi-0.0.1.new.gem`
+5. In your project that uses Capybara::Paparazzi:
+  1. Update your Gemfile to say `gem 'capybara-paparazzi', '0.0.1.new'
+  2. `bundle install`
+
+Some useful one-liners for the above:
+
+In `capybara-paparazzi` repository:
+
+    gem uninstall capybara-paparazzi && gem build capybara-paparazzi.gemspec && gem install ./capybara-paparazzi-0.0.1.new.gem Successfully uninstalled capybara-paparazzi-0.0.1.new
+
+In your project:
+
+    rm vendor/cache/capybara-paparazzi-0.0.1.new.gem && bundle

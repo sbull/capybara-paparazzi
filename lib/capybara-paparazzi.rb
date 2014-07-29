@@ -1,6 +1,7 @@
 require 'capybara'
 
 require 'capybara/paparazzi/version'
+require 'capybara/paparazzi/dsl'
 require 'capybara/paparazzi/shooter'
 require 'capybara/paparazzi/driver'
 require 'capybara/paparazzi/element'
@@ -24,13 +25,23 @@ module Capybara::Paparazzi
       @used_drivers ||= {}
     end
 
-    def take_snapshots(driver, event_details=nil)
-      Capybara::Paparazzi::Shooter.take_snapshots(driver, event_details)
+    def take_snapshots(driver, event, args)
+      Capybara::Paparazzi::Shooter.take_snapshots(driver, { event: event, args: args })
+    end
+
+    def take_snapshots_if_following(driver, event, args)
+      if driver.is_a?(Capybara::Paparazzi::Driver)
+        take_snapshots(driver, event, args)
+      end
     end
 
   end # ClassMethods
 
   extend ClassMethods
+end
+
+module Capybara::DSL
+  include Capybara::Paparazzi::DSL
 end
 
 class Capybara::Node::Element

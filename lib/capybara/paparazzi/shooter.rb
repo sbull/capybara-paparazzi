@@ -14,17 +14,18 @@ class Capybara::Paparazzi::Shooter
     left: '0',
     width: '100%',
     zIndex: 999999,
-    borderBottom: '1px solid red',
+    background: 'none',
+    borderBottom: '3px dashed red',
   }.freeze
 
   CONFIG_VARS = {
-    js_var_name: 'THE_FOLD',
+    js_var_name: 'CAPYBARA_PAPARAZZI_FOLD',
     js_var_style: {}.merge(DEFAULT_FOLD_STYLE),
     screenshot_sizes: ([] + DEFAULT_SCREENSHOT_SIZES),
     file_dir: 'screenshots',
     js_setup_script: ->(shooter) {
       var_name = shooter.js_var_name
-      script = "if (!window.#{var_name}) { #{var_name} = document.createElement('DIV');"
+      script = "if (!window.#{var_name}) { #{var_name} = document.createElement('DIV'); #{var_name}.className = '#{var_name}';"
       shooter.js_var_style.each do |prop_name, prop_val|
         script += "#{var_name}.style.#{prop_name} = #{prop_val.to_json};"
       end
@@ -59,7 +60,40 @@ class Capybara::Paparazzi::Shooter
 
     def take_snapshots(driver, event_details=nil)
       # TODO: Be smarter. One shooter per driver, but avoid memory leaks (be mindful of Guard, etc.).
-      new(driver, event_details).take_snapshots
+      unless driver.capybara_paparazzi_settings[:block_disabled] || driver.capybara_paparazzi_settings[:manually_disabled]
+        new(driver, event_details).take_snapshots
+      end
+    end
+
+    def without_snapshots(driver, &block)
+      is_paparazzi = is_paparazzi?(driver)
+      if is_paparazzi
+        old_val = driver.capybara_paparazzi_settings[:block_disabled]
+        driver.capybara_paparazzi_settings[:block_disabled] = true
+      end
+      begin
+        yield
+      ensure
+        if is_paparazzi
+          driver.capybara_paparazzi_settings[:block_disabled] = old_val
+        end
+      end
+    end
+
+    def turn_off(driver)
+      if is_paparazzi?(driver)
+        driver.capybara_paparazzi_settings[:manually_disabled] = true
+      end
+    end
+
+    def turn_on(driver)
+      if is_paparazzi?(driver)
+        driver.capybara_paparazzi_settings[:manually_disabled] = false
+      end
+    end
+
+    def is_paparazzi?(driver)
+      driver.is_a?(Capybara::Paparazzi::Driver)
     end
 
     def next_suffix_for_path!(path)
@@ -125,17 +159,7 @@ class Capybara::Paparazzi::Shooter
   end
 
   def resize_window(width, height)
-    begin
-      if driver.respond_to?(:resize) # Poltergeist
-        driver.resize(width, height)
-      elsif driver.respond_to?(:resize_window) # Poltergeist
-        driver.resize_window(width, height)
-      else # Capybara default / Selenium
-        driver.resize_window_to(driver.current_window_handle, width, height)
-      end
-    rescue => e
-      log("Error while resizing window: #{e}")
-    end
+    driver_resize_window(width, height)
     execute_resize_script(height)
   end
 
@@ -146,6 +170,21 @@ class Capybara::Paparazzi::Shooter
     path, suffix = path_and_suffix_for_url(driver.current_url)
     self.path = path
     self.suffix = suffix
+  end
+
+  def driver_resize_window(width, height)
+    begin
+      if driver.respond_to?(:resize) # Poltergeist
+        driver.resize(width, height)
+      elsif driver.respond_to?(:resize_window) # Poltergeist
+        driver.resize_window(width, height)
+      else # Capybara default / Selenium
+        driver.resize_window_to(driver.current_window_handle, width, height)
+      end
+    rescue => e
+      log("Error while resizing window: #{e}")
+      raise
+    end
   end
 
   def execute_setup_script
@@ -161,12 +200,30 @@ class Capybara::Paparazzi::Shooter
       end
     rescue => e
       log("#{e.message}\nJavascript: #{script_text}")
+      raise
     end
   end
 
   def save_snapshots
-    screenshot_sizes.each do |w_h_rest|
-      save_snapshot(w_h_rest)
+    # In some cases, using screen sizes other than the default
+    # can cause failures in Poltergeist, when using the default
+    # screen size does not. So be sure to always reset to the
+    # original screen size to ensure test behavior consistent with
+    # the non-Capybara::Paparazzi tests.
+    # Example error:
+    # Firing a click at co-ordinates [703, 654] failed. Poltergeist detected another element with CSS selector '' at this position. It may be overlapping the element you are trying to interact with. If you don't care about overlapping elements, try using node.trigger('click').
+
+    begin
+      orig_width, orig_height = driver.evaluate_script("[window.innerWidth, window.innerHeight]")
+      screenshot_sizes.each do |w_h_rest|
+        save_snapshot(w_h_rest)
+      end
+    ensure
+      begin
+        driver_resize_window(orig_width, orig_height)
+      rescue => e
+        log("Error restoring original window size to #{orig_width}x#{orig_height}: #{e}")
+      end
     end
   end
 

@@ -35,6 +35,20 @@ module Capybara::Paparazzi
       end
     end
 
+    def without_snapshots(driver, &block)
+      Capybara::Paparazzi::Shooter.without_snapshots(driver) do
+        yield
+      end
+    end
+
+    def turn_off(driver)
+      Capybara::Paparazzi::Shooter.turn_off(driver)
+    end
+
+    def turn_on(driver)
+      Capybara::Paparazzi::Shooter.turn_on(driver)
+    end
+
   end # ClassMethods
 
   extend ClassMethods

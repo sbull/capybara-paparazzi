@@ -87,13 +87,13 @@ Here's a fairly complete list of things you can do:
 
 ```ruby
 Capybara::Paparazzi.config do |config|
-  config.js_var_name = 'MY_DIV' # Name of the div used to draw the fold line.
+  config.js_var_name = 'MY_FOLD_DIV' # Name of the div used to draw the fold line.
   config.js_var_style.merge!(color: 'red', fontWeight: 'bold')
   config.screenshot_sizes = [ config.screenshot_sizes.first, (config.screenshot_sizes.last + [ :EXTRA_DATA ]) ]
   config.file_dir = '../screenshots'
   # config.js_setup_script = ->(shooter){ ... }
   config.js_resize_script = ->(shooter, height) {
-    "#{shooter.js_var_name}.style.height = '#{height}px'; MY_DIV.textContent = #{shooter.screenshot_size.inspect.to_json}; MY_DIV.style.fontSize = '#{height/4}px';"
+    "#{shooter.js_var_name}.style.height = '#{height}px'; MY_FOLD_DIV.textContent = #{shooter.screenshot_size.inspect.to_json}; MY_FOLD_DIV.style.fontSize = '#{height/4}px';"
   }
   # config.js_cleanup_script = ->(shooter){}
   config.before_save_callback = ->(shooter) {
@@ -106,7 +106,31 @@ end
 
 For the default settings, see [shooter.rb](https://github.com/sbull/capybara-paparazzi/blob/master/lib/capybara/paparazzi/shooter.rb).
 
-### Manual screenshots
+### Skipping Screenshots
+
+Many test flows might have common steps that are just plain redundant
+to keep capturing. Disabling Capybara::Paparazzi for those flows could
+be useful. Here's how:
+```ruby
+without_snapshots do
+  visit root_path # <-- your stuff
+end
+```
+
+`without_snapshots` is also known as `without_paparazzi`.
+
+You can also disable Capybara::Paparazzi in scenarios by calling
+
+    turn_snapshots_off
+
+(aka `turn_paparazzi_off`), but then you'll have to turn it back on
+for future scenarios by calling
+
+    turn_snapshots_on
+
+(aka `turn_paparazzi_on`).
+
+### Manual Screenshots
 
 Try as it might, Capybara::Paparazzi could miss some photos that you
 want it to take, particularly if you're using javascript to change
@@ -128,7 +152,13 @@ phone, tablet, and desktop browser dimensions. The most important
 feature is the width. The height is used to draw the "fold" line - the
 default sizes attempt to take into account the browser chrome that
 gets added to the top and bottom of browser windows, which results in
-a shorter view than the actual device height.
+a shorter view than the actual device height. As indicated above,
+you can change the screenshot sizes with
+
+    config.screenshot_sizes = [ [ 1920, 1080, 'my big', 'screen' ] ]
+
+The first 2 values in the array are width and height, but the whole array
+is made available for use in customized configuration scripts.
 
 ## Tips & Tricks
 
@@ -209,7 +239,7 @@ Some useful one-liners for the above:
 
 In `capybara-paparazzi` repository:
 
-    gem uninstall capybara-paparazzi && gem build capybara-paparazzi.gemspec && gem install ./capybara-paparazzi-0.0.1.new.gem Successfully uninstalled capybara-paparazzi-0.0.1.new
+    gem uninstall capybara-paparazzi && gem build capybara-paparazzi.gemspec && gem install ./capybara-paparazzi-0.0.1.new.gem
 
 In your project:
 

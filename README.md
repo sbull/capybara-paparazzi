@@ -13,7 +13,7 @@ Capybara::Paparazzi hooks into Capybara's feature tests and takes
 pictures at significant user actions (like visiting a page, clicking
 buttons, etc.). It relies on a driver that supports saving screenshots
 and executing javascript, and was originally built with Poltergeist in
-mind.
+mind (due to its headless nature).
 
 A few driving principles of Capybara::Paparazzi:
 
@@ -199,9 +199,21 @@ Here's a simple approach that could work for you:
 needed to be sure to capture everything. Currently, `visit` and `click`
 are the primary triggers.
 
-- Development has only been done with Poltergeist on an Ubuntu
-virtual machine, but the intent is to work with other drivers & setups.
-So feedback on that would be appreciated.
+### Compatibility
+
+Original development was done in the following environment:
+- capybara 2.2.1
+- poltergeist 1.5.1
+- phantomjs 1.9.7
+- ruby 2.0.0
+- ubuntu 12.04
+
+Capybara::Paparazzi should work with other drivers and platforms.
+It is known to work on OSX, using both poltergeist and
+[webkit](https://github.com/thoughtbot/capybara-webkit) as drivers.
+
+Please open a github issue if you discover a problem with another
+platform or driver.
 
 ## Related Projects
 

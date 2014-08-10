@@ -23,6 +23,11 @@ class Capybara::Paparazzi::Shooter
     js_var_style: {}.merge(DEFAULT_FOLD_STYLE),
     screenshot_sizes: ([] + DEFAULT_SCREENSHOT_SIZES),
     file_dir: 'screenshots',
+    make_fewer_directories: false,
+    make_shorter_filenames: false,
+    path_and_suffix_generator: ->(shooter, url) {
+      shooter.path_and_suffix_for_url(url)
+    },
     js_setup_script: ->(shooter) {
       var_name = shooter.js_var_name
       script = "if (!window.#{var_name}) { #{var_name} = document.createElement('DIV'); #{var_name}.className = '#{var_name}';"
@@ -102,7 +107,7 @@ class Capybara::Paparazzi::Shooter
       num = @path_nums[path]
       @path_nums[path] = num.to_i + 1
       if num
-        suffix = ".#{num}"
+        suffix = "-#{num}"
         if @path_nums[path+suffix]
           suffix = next_suffix_for_path!(path)
         end
@@ -120,7 +125,6 @@ class Capybara::Paparazzi::Shooter
   attr_accessor :driver, :event_details
   attr_accessor :path, :suffix
   attr_accessor :do_shot, :screenshot_size, :filename
-  attr_accessor :before_save_callback
 
   attr_accessor(*CONFIG_VARS.keys)
   # def cv; @cv ||= self.class.config[:cv]; end
@@ -163,11 +167,31 @@ class Capybara::Paparazzi::Shooter
     execute_resize_script(height)
   end
 
+  def path_and_suffix_for_url(url)
+    path = URI.parse(url).path
+    path[0] = '' # remove the leading '/'
+    path[-1] = '' if path[-1] == '/' # remove the trailing '/'
+    path = 'index' if path.empty?
+    base = path.gsub('/','-')
+    if make_fewer_directories
+      unless make_shorter_filenames
+        path = path.sub(/[^\/]*$/, '') + base
+      end
+    else
+      path += '/'
+      unless make_shorter_filenames
+        path += base
+      end
+    end
+    suffix = next_suffix_for_path!(path)
+    [ path, suffix ]
+  end
+
 
   private
 
   def set_path_and_suffix
-    path, suffix = path_and_suffix_for_url(driver.current_url)
+    path, suffix = path_and_suffix_generator.call(self, driver.current_url)
     self.path = path
     self.suffix = suffix
   end
@@ -230,7 +254,10 @@ class Capybara::Paparazzi::Shooter
   def save_snapshot(width_height_rest)
     @do_shot = true
     @screenshot_size = ([] + width_height_rest)
-    @filename = "#{file_dir}#{path}#{suffix}-#{width}.png"
+
+    @filename = "#{file_dir}/#{path}"
+    @filename += '-' unless @filename[-1] == '/'
+    @filename += "#{width}#{suffix}.png"
 
     resize_window(width, height)
 
@@ -255,13 +282,6 @@ class Capybara::Paparazzi::Shooter
 
   def get_save_screenshot_args
     [ filename, { full: true } ]
-  end
-
-  def path_and_suffix_for_url(url)
-    path = URI.parse(url).path
-    path += 'index' if path[-1] == '/'
-    suffix = next_suffix_for_path!(path)
-    [ path, suffix ]
   end
 
   def next_suffix_for_path!(path)

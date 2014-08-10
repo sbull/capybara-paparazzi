@@ -91,6 +91,11 @@ Capybara::Paparazzi.config do |config|
   config.js_var_style.merge!(color: 'red', fontWeight: 'bold')
   config.screenshot_sizes = [ config.screenshot_sizes.first, (config.screenshot_sizes.last + [ :EXTRA_DATA ]) ]
   config.file_dir = '../screenshots'
+  # config.make_fewer_directories = true
+  # config.make_shorter_filenames = true
+  config.path_and_suffix_generator = ->(shooter, url) {
+    shooter.path_and_suffix_for_url(url).collect{|p| p.split('/').last }
+  }
   # config.js_setup_script = ->(shooter){ ... }
   config.js_resize_script = ->(shooter, height) {
     "#{shooter.js_var_name}.style.height = '#{height}px'; MY_FOLD_DIV.textContent = #{shooter.screenshot_size.inspect.to_json}; MY_FOLD_DIV.style.fontSize = '#{height/4}px';"
@@ -159,6 +164,30 @@ you can change the screenshot sizes with
 
 The first 2 values in the array are width and height, but the whole array
 is made available for use in customized configuration scripts.
+
+### Filenames
+
+By default, a new directory is created to contain the screenshots for
+each distinct URL. There are a few ways to change this if it's not to
+your liking:
+
+1. Use `config.make_fewer_directories = true`, which will skip the last
+   directory level and put screenshots for multiple pages in the same
+   directory.
+
+2. Use `config.make_shorter_filenames = true`, which causes the basenames
+   of the files not to include a representation of the full path
+   (the full path in the basename makes it easier to understand when
+   copied/moved outside of the screenshots directory tree).
+
+3. Override `config.path_and_suffix_generator = ->(shooter, url) {...}`,
+   to return `[path, suffix]` (`suffix` indicates repeated screenshots
+   of the same url).
+
+4. Use `config.before_save_callback = ->(shooter) {...}` to change
+   `shooter.filename`, in which you can access `shooter.screenshot_size`
+   and other attributes.
+
 
 ## Tips & Tricks
 
